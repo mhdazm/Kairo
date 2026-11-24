@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kairo - Brainstorm Prototype</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            canvas: '#0E1014',
+            surface: '#15181E',
+            'surface-hover': '#1C2028',
+            border: '#262B36',
+            'border-light': '#323947',
+            textMain: '#F3F4F6',
+            textMuted: '#8B92A0',
+            accent: '#3B82F6',
+            accentGreen: '#10B981',
+            accentAmber: '#F59E0B'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Custom scrollbar for dark mode */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0E1014;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #262B36;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #323947;
+    }
+
+    /* Stacking card transitions */
+    .stack-card {
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+                  opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                  z-index 0.35s step-end;
+    }
+
+    /* Touch drag prevention for smooth swiping */
+    .touch-none-select {
+      touch-action: pan-y;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-canvas text-textMain font-sans min-h-screen antialiased selection:bg-blue-500 selection:text-white pb-12">
+
+  <!-- Main Container -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
+
+    <!-- HEADER SECTION -->
+    <header class="flex items-center justify-between border-b border-border pb-5 mb-8">
+      <div class="flex items-center space-x-3">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-textMain">Kairo</h1>
+        <span class="px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-widest font-semibold bg-border text-textMuted rounded-md border border-border-light">
+          Brainstorm Draft
+        </span>
+      </div>
+      
+      <button 
+        id="reset-btn"
+        class="inline-flex items-center space-x-1.5 text-xs font-medium text-textMuted hover:text-textMain bg-surface hover:bg-surface-hover border border-border hover:border-border-light px-3 py-1.5 rounded-lg transition-all"
+        title="Reset all demo data"
+      >
+        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        <span>Reset</span>
+      </button>
+    </header>
+
+    <!-- STACKING FINANCIAL WIDGET SECTION -->
+    <section class="mb-10">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="wallet" class="w-4 h-4 text-textMuted"></i>
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-textMuted">Financial Summary</h2>
+        </div>
+        <div class="text-[11px] text-textMuted hidden sm:block">
+          Swipe card left/right or use arrows
+        </div>
+      </div>
+
+      <!-- Carousel Container -->
+      <div class="relative w-full max-w-xl mx-auto">
+        
+        <!-- Stack Canvas / Active Area -->
+        <div 
+          id="stack-container"
+          class="relative h-48 sm:h-44 w-full touch-none-select cursor-grab active:cursor-grabbing"
+        >
+          <!-- Cards rendered by JS dynamically -->
+        </div>
+
+        <!-- Carousel Navigation & Indicators -->
+        <div class="flex items-center justify-between mt-4 px-2">
+          <button 
+            id="prev-card-btn"
+            class="p-2 rounded-lg bg-surface border border-border hover:border-border-light text-textMuted hover:text-textMain transition-all active:scale-95"
+            aria-label="Previous card"
+          >
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Dots -->
+          <div id="stack-dots" class="flex items-center space-x-2">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <button 
+            id="next-card-btn"
+            class="p-2 rounded-lg bg-surface border border-border hover:border-border-light text-textMuted hover:text-textMain transition-all active:scale-95"
+            aria-label="Next card"
+          >
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- INPUT CENTER SECTION -->
+    <section class="mb-10">
+      <div class="bg-surface border border-border rounded-xl p-4 sm:p-5">
+        <div class="flex items-center justify-between mb-3">
+          <label for="item-input" class="text-xs font-semibold uppercase tracking-wider text-textMuted flex items-center gap-1.5">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            Input Center
+          </label>
+          <span class="text-[11px] text-textMuted">Target Bucket</span>
+        </div>
+
+        <!-- Target Bucket Pills -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3" id="bucket-selector">
+          <button type="button" data-bucket="tasks" class="bucket-pill active flex items-center justify-center space-x-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all">
+            <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+            <span>Tasks</span>
+          </button>
+          <button type="button" data-bucket="chores" class="bucket-pill flex items-center justify-center space-x-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all">
+            <i data-lucide="home" class="w-3.5 h-3.5"></i>
+            <span>Chores</span>
+          </button>
+          <button type="button" data-bucket="homeworks" class="bucket-pill flex items-center justify-center space-x-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+            <span>Homeworks</span>
+          </button>
+          <button type="button" data-bucket="works" class="bucket-pill flex items-center justify-center space-x-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all">
+            <i data-lucide="briefcase" class="w-3.5 h-3.5"></i>
+            <span>Works</span>
+          </button>
+        </div>
+
+        <!-- Input Field & Add Button -->
+        <form id="add-item-form" class="flex items-center gap-2">
+          <input 
+            type="text" 
+            id="item-input" 
+            placeholder="Type a task, chore, homework, or work item..." 
+            class="flex-1 bg-canvas border border-border focus:border-border-light text-textMain text-sm rounded-lg px-4 py-2.5 focus:outline-none transition-all placeholder:text-textMuted/60"
+            autocomplete="off"
+            required
+          />
+          <button 
+            type="submit"
+            class="bg-textMain hover:bg-white text-canvas font-semibold px-5 py-2.5 rounded-lg text-sm transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
+          >
+            <span>Add</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- FOUR BUCKETS GRID -->
+    <section>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="buckets-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-surface border border-border text-textMain text-xs px-4 py-3 rounded-lg shadow-xl translate-y-16 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 z-50">
+      <i data-lucide="info" class="w-4 h-4 text-accent"></i>
+      <span id="toast-msg">Notification</span>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // DEFAULT INITIAL STATE
+    const INITIAL_STATE = {
+      financials: [
+        { id: 'today', title: "Today’s Income", amount: 150000, icon: 'sun' },
+        { id: 'weekly', title: "Weekly Income", amount: 1250000, icon: 'calendar' },
+        { id: 'unpaid', title: "Unpaid", amount: 450000, icon: 'alert-circle' }
+      ],
+      activeCardIndex: 0,
+      selectedBucket: 'tasks',
+      buckets: {
+        tasks: [
+          { id: 't1', text: 'Outline new project draft', done: true },
+          { id: 't2', text: 'Review wireframe layout', done: false }
+        ],
+        chores: [
+          { id: 'c1', text: 'Clean work desk & organization', done: true },
+          { id: 'c2', text: 'Water office plants', done: false }
+        ],
+        homeworks: [
+          { id: 'h1', text: 'Read Chapter 4 of System Architecture', done: false },
+          { id: 'h2', text: 'Submit database schema draft', done: false }
+        ],
+        works: [
+          { id: 'w1', text: 'Deploy staging server updates', done: false },
+          { id: 'w2', text: 'Send weekly progress report', done: true }
+        ]
+      }
+    };
+
+    // LOCAL STORAGE MANAGER
+    const STORAGE_KEY = 'kairo_brainstorm_state_v1';
+    
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to load state:', e);
+      }
+      return JSON.parse(JSON.stringify(INITIAL_STATE));
+    }
+
+    function saveState(state) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Failed to save state:', e);
+      }
+    }
+
+    // STATE INITIALIZATION
+    let state = loadState();
+
+    // CURRENCY FORMATTER (IDR)
+    function formatIDR(val) {
+      const num = Number(val) || 0;
+      return 'Rp ' + num.toLocaleString('id-ID');
+    }
+
+    // TOAST DISPLAY
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      toastMsg.innerText = msg;
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2500);
+    }
+
+    // --- FINANCIAL CAROUSEL STACK LOGIC ---
+    function renderFinancialStack() {
+      const container = document.getElementById('stack-container');
+      const dotsContainer = document.getElementById('stack-dots');
+      container.innerHTML = '';
+      dotsContainer.innerHTML = '';
+
+      const total = state.financials.length;
+
+      state.financials.forEach((item, index) => {
+        // Calculate offset relative to active card
+        let relativeOffset = (index - state.activeCardIndex + total) % total;
+
+        // Card Element
+        const card = document.createElement('div');
+        card.className = 'stack-card absolute inset-0 w-full bg-surface border border-border rounded-xl p-5 sm:p-6 flex flex-col justify-between select-none shadow-sm';
+        
+        // Stacking visual transforms
+        if (relativeOffset === 0) {
+          // Front active card
+          card.style.transform = 'translateY(0px) scale(1)';
+          card.style.zIndex = '30';
+          card.style.opacity = '1';
+          card.style.pointerEvents = 'auto';
+        } else if (relativeOffset === 1) {
+          // 1st card behind
+          card.style.transform = 'translateY(12px) scale(0.95)';
+          card.style.zIndex = '20';
+          card.style.opacity = '0.7';
+          card.style.pointerEvents = 'none';
+        } else {
+          // 2nd card behind
+          card.style.transform = 'translateY(24px) scale(0.90)';
+          card.style.zIndex = '10';
+          card.style.opacity = '0.4';
+          card.style.pointerEvents = 'none';
+        }
+
+        // Color subtle accent depending on item
+        const badgeColor = item.id === 'unpaid' 
+          ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="p-1.5 rounded-lg border text-xs ${badgeColor}">
+                <i data-lucide="${item.icon || 'wallet'}" class="w-4 h-4"></i>
+              </span>
+              <span class="text-sm font-semibold text-textMain">${item.title}</span>
+            </div>
+            <span class="text-[10px] font-mono text-textMuted uppercase tracking-wider">Card ${index + 1} of ${total}</span>
+          </div>
+
+          <div class="my-2">
+            <div class="text-xs text-textMuted mb-0.5">Current Balance</div>
+            <div class="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-textMain">
+              ${formatIDR(item.amount)}
+            </div>
+          </div>
+
+          <!-- Inline quick update amount bar inside card -->
+          <div class="flex items-center gap-2 pt-2 border-t border-border/60" onclick="event.stopPropagation()">
+            <div class="relative flex-1">
+              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-textMuted">+</span>
+              <input 
+                type="number" 
+                placeholder="Amount (e.g. 50000)" 
+                id="amount-input-${index}"
+                class="w-full bg-canvas border border-border focus:border-border-light text-textMain text-xs font-mono rounded-md pl-6 pr-2 py-1.5 focus:outline-none transition-all placeholder:text-textMuted/50"
+              />
+            </div>
+            <button 
+              onclick="modifyFinancialAmount(${index}, true)"
+              class="bg-surface-hover hover:bg-border text-textMain border border-border px-2.5 py-1.5 rounded-md text-xs font-medium transition-all hover:scale-105 active:scale-95 flex items-center gap-1"
+              title="Add amount"
+            >
+              <i data-lucide="plus" class="w-3 h-3 text-emerald-400"></i>
+              <span>Add</span>
+            </button>
+            <button 
+              onclick="modifyFinancialAmount(${index}, false)"
+              class="bg-surface-hover hover:bg-border text-textMuted hover:text-textMain border border-border px-2 py-1.5 rounded-md text-xs transition-all hover:scale-105 active:scale-95"
+              title="Clear amount to 0"
+            >
+              <span>Clear</span>
+            </button>
+          </div>
+        `;
+
+        container.appendChild(card);
+
+        // Indicator dots
+        const dot = document.createElement('button');
+        dot.className = `h-1.5 rounded-full transition-all duration-300 ${
+          index === state.activeCardIndex ? 'w-6 bg-textMain' : 'w-1.5 bg-border hover:bg-border-light'
+        }`;
+        dot.onclick = () => setActiveCard(index);
+        dotsContainer.appendChild(dot);
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setActiveCard(index) {
+      const total = state.financials.length;
+      state.activeCardIndex = (index + total) % total;
+      saveState(state);
+      renderFinancialStack();
+    }
+
+    function modifyFinancialAmount(index, isAdd) {
+      const input = document.getElementById(`amount-input-${index}`);
+      if (!input) return;
+
+      if (!isAdd) {
+        state.financials[index].amount = 0;
+        input.value = '';
+        saveState(state);
+        renderFinancialStack();
+        showToast(`Cleared ${state.financials[index].title}`);
+        return;
+      }
+
+      const val = parseFloat(input.value);
+      if (isNaN(val) || val <= 0) {
+        showToast('Please enter a valid positive number');
+        return;
+      }
+
+      state.financials[index].amount += val;
+      input.value = '';
+      saveState(state);
+      renderFinancialStack();
+      showToast(`Added ${formatIDR(val)} to ${state.financials[index].title}`);
+    }
+
+    // DRAG / SWIPE LOGIC FOR STACK CONTAINER
+    let dragStartX = 0;
+    let isDragging = false;
+
+    function initSwipeGestures() {
+      const container = document.getElementById('stack-container');
+
+      // Mouse events
+      container.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        dragStartX = e.clientX;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const diffX = e.clientX - dragStartX;
+        handleSwipeEnd(diffX);
+      });
+
+      // Touch events
+      container.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        dragStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      container.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const diffX = e.changedTouches[0].clientX - dragStartX;
+        handleSwipeEnd(diffX);
+      });
+    }
+
+    function handleSwipeEnd(diffX) {
+      const threshold = 40; // minimum drag distance
+      if (diffX < -threshold) {
+        // Swiped Left -> Next Card
+        setActiveCard(state.activeCardIndex + 1);
+      } else if (diffX > threshold) {
+        // Swiped Right -> Prev Card
+        setActiveCard(state.activeCardIndex - 1);
+      }
+    }
+
+    // --- INPUT CENTER & BUCKET SELECTOR LOGIC ---
+    function initBucketSelector() {
+      const selector = document.getElementById('bucket-selector');
+      const pills = selector.querySelectorAll('.bucket-pill');
+
+      function updatePillStyles() {
+        pills.forEach(pill => {
+          const bucket = pill.dataset.bucket;
+          if (bucket === state.selectedBucket) {
+            pill.className = 'bucket-pill active flex items-center justify-center space-x-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all bg-textMain text-canvas border-textMain font-semibold';
+          } else {
+            pill.className = 'bucket-pill flex items-center justify-center space-x-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all bg-canvas text-textMuted border-border hover:border-border-light hover:text-textMain';
+          }
+        });
+      }
+
+      pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          state.selectedBucket = pill.dataset.bucket;
+          saveState(state);
+          updatePillStyles();
+        });
+      });
+
+      updatePillStyles();
+    }
+
+    // Handle Form Submit to add new item
+    document.getElementById('add-item-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('item-input');
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      const targetBucket = state.selectedBucket || 'tasks';
+      const newItem = {
+        id: 'item_' + Date.now(),
+        text: text,
+        done: false
+      };
+
+      if (!state.buckets[targetBucket]) {
+        state.buckets[targetBucket] = [];
+      }
+
+      state.buckets[targetBucket].unshift(newItem);
+      saveState(state);
+      renderBucketsGrid();
+
+      input.value = '';
+      showToast(`Added to ${targetBucket.charAt(0).toUpperCase() + targetBucket.slice(1)}`);
+    });
+
+    // --- BUCKETS GRID RENDER & ACTIONS ---
+    const BUCKET_CONFIG = {
+      tasks: { title: 'Tasks', icon: 'check-square' },
+      chores: { title: 'Chores', icon: 'home' },
+      homeworks: { title: 'Homeworks', icon: 'book-open' },
+      works: { title: 'Works', icon: 'briefcase' }
+    };
+
+    function renderBucketsGrid() {
+      const grid = document.getElementById('buckets-grid');
+      grid.innerHTML = '';
+
+      Object.keys(BUCKET_CONFIG).forEach(key => {
+        const config = BUCKET_CONFIG[key];
+        const items = state.buckets[key] || [];
+        const completedCount = items.filter(i => i.done).length;
+
+        const card = document.createElement('div');
+        card.className = 'bg-surface border border-border rounded-xl p-4 sm:p-5 flex flex-col justify-between min-h-[220px] transition-all hover:border-border-light';
+
+        card.innerHTML = `
+          <div>
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-border/80 pb-3 mb-3">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="${config.icon}" class="w-4 h-4 text-textMuted"></i>
+                <h3 class="text-sm font-semibold text-textMain">${config.title}</h3>
+              </div>
+              <span class="text-xs font-mono bg-canvas border border-border text-textMuted px-2 py-0.5 rounded-full">
+                ${completedCount}/${items.length}
+              </span>
+            </div>
+
+            <!-- Items List -->
+            <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+              ${items.length === 0 ? `
+                <div class="text-center py-8 text-xs text-textMuted/60 italic">
+                  No items yet
+                </div>
+              ` : items.map(item => `
+                <div class="group flex items-center justify-between gap-2 p-2 rounded-lg bg-canvas/40 hover:bg-canvas border border-transparent hover:border-border transition-all">
+                  <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                    <input 
+                      type="checkbox" 
+                      ${item.done ? 'checked' : ''} 
+                      onchange="toggleItemDone('${key}', '${item.id}')"
+                      class="w-4 h-4 rounded border-border text-accent focus:ring-0 bg-canvas cursor-pointer accent-textMain"
+                    />
+                    <span class="text-xs transition-all truncate select-none ${
+                      item.done ? 'line-through text-textMuted/50' : 'text-textMain'
+                    }">
+                      ${escapeHtml(item.text)}
+                    </span>
+                  </label>
+                  <button 
+                    onclick="deleteItem('${key}', '${item.id}')"
+                    class="text-textMuted hover:text-red-400 p-1 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-all rounded hover:bg-border/50"
+                    title="Delete item"
+                  >
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleItemDone(bucketKey, itemId) {
+      const items = state.buckets[bucketKey];
+      if (!items) return;
+
+      const item = items.find(i => i.id === itemId);
+      if (item) {
+        item.done = !item.done;
+        saveState(state);
+        renderBucketsGrid();
+      }
+    }
+
+    function deleteItem(bucketKey, itemId) {
+      if (!state.buckets[bucketKey]) return;
+      state.buckets[bucketKey] = state.buckets[bucketKey].filter(i => i.id !== itemId);
+      saveState(state);
+      renderBucketsGrid();
+      showToast('Item deleted');
+    }
+
+    // Helper to sanitize HTML strings
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+
+    // RESET FUNCTIONALITY
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      state = JSON.parse(JSON.stringify(INITIAL_STATE));
+      saveState(state);
+      renderFinancialStack();
+      initBucketSelector();
+      renderBucketsGrid();
+      showToast('Reset to initial draft state');
+    });
+
+    // CAROUSEL NAV BUTTONS
+    document.getElementById('prev-card-btn').addEventListener('click', () => {
+      setActiveCard(state.activeCardIndex - 1);
+    });
+
+    document.getElementById('next-card-btn').addEventListener('click', () => {
+      setActiveCard(state.activeCardIndex + 1);
+    });
+
+    // INIT APP ON LOAD
+    window.onload = function() {
+      renderFinancialStack();
+      initSwipeGestures();
+      initBucketSelector();
+      renderBucketsGrid();
+    };
+  </script>
+</body>
+</html>
